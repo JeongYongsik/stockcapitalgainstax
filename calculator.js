@@ -183,39 +183,87 @@ function setupButtonGroups() {
     });
 }
 
+// 날짜 자동 포맷팅 (입력창 내에서)
+function formatDateInput(value) {
+    // 숫자만 추출
+    const numbers = value.replace(/[^\d]/g, '');
+
+    if (numbers.length === 0) return '';
+    if (numbers.length <= 4) return numbers;
+    if (numbers.length <= 6) return numbers.slice(0, 4) + '.' + numbers.slice(4);
+    return numbers.slice(0, 4) + '.' + numbers.slice(4, 6) + '.' + numbers.slice(6, 8);
+}
+
+// YYYY.MM.DD를 YYYYMMDD로 변환
+function dateToPlainString(dateStr) {
+    return dateStr.replace(/\./g, '');
+}
+
+// YYYY-MM-DD를 YYYY.MM.DD로 변환
+function pickerDateToDisplayDate(dateStr) {
+    return dateStr.replace(/-/g, '.');
+}
+
+// YYYY.MM.DD를 YYYY-MM-DD로 변환
+function displayDateToPickerDate(dateStr) {
+    return dateStr.replace(/\./g, '-');
+}
+
 // 날짜 입력 이벤트
 function setupDateInputs() {
     const dateInputs = ['transferDate', 'acquisitionDate'];
 
     dateInputs.forEach(id => {
-        const input = document.getElementById(id);
-        const display = document.getElementById(id + 'Display');
+        const textInput = document.getElementById(id);
+        const datePicker = document.getElementById(id + 'Picker');
+        const calendarBtn = document.querySelector(`[data-target="${id}"]`);
 
-        if (!input || !display) {
-            console.error('Date element not found:', id);
+        if (!textInput || !datePicker || !calendarBtn) {
+            console.error('Date elements not found:', id);
             return;
         }
 
-        input.addEventListener('input', function() {
-            // 숫자만 입력되도록
-            const value = this.value.replace(/[^\d]/g, '');
-            this.value = value;
+        // 텍스트 입력시 자동 포맷팅
+        textInput.addEventListener('input', function(e) {
+            const cursorPosition = this.selectionStart;
+            const oldValue = this.value;
+            const oldLength = oldValue.length;
 
-            // 8자리가 되면 날짜 형식으로 표시
-            if (value.length === 8) {
-                const formatted = formatDateString(value);
-                if (formatted) {
-                    display.textContent = formatted;
-                    display.style.color = '#667eea';
-                } else {
-                    display.textContent = '올바른 날짜를 입력해주세요';
-                    display.style.color = '#d32f2f';
-                }
-            } else {
-                display.textContent = '';
+            // 자동 포맷팅 적용
+            this.value = formatDateInput(this.value);
+
+            // 커서 위치 조정 (점이 추가되면 커서를 한 칸 더 이동)
+            const newLength = this.value.length;
+            if (newLength > oldLength) {
+                this.setSelectionRange(cursorPosition + 1, cursorPosition + 1);
             }
 
-            console.log('Date input:', id, value, 'Formatted:', display.textContent);
+            // date picker에도 반영
+            const plainDate = dateToPlainString(this.value);
+            if (plainDate.length === 8) {
+                const formatted = formatDateString(plainDate);
+                if (formatted) {
+                    // YYYY.MM.DD를 YYYY-MM-DD로 변환하여 date picker에 설정
+                    datePicker.value = displayDateToPickerDate(formatted);
+                }
+            }
+
+            console.log('Date input:', id, this.value);
+        });
+
+        // 달력 버튼 클릭시 date picker 열기
+        calendarBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            datePicker.showPicker();
+        });
+
+        // date picker에서 날짜 선택시 텍스트 입력창에 반영
+        datePicker.addEventListener('change', function() {
+            if (this.value) {
+                // YYYY-MM-DD 형식을 YYYY.MM.DD로 변환
+                textInput.value = pickerDateToDisplayDate(this.value);
+                console.log('Date picked:', id, textInput.value);
+            }
         });
     });
 }
@@ -263,15 +311,25 @@ function calculateTax() {
     console.log('Calculate button clicked');
 
     try {
-        // 입력값 가져오기
-        const transferDateStr = document.getElementById('transferDate').value;
-        const acquisitionDateStr = document.getElementById('acquisitionDate').value;
+        // 입력값 가져오기 (YYYY.MM.DD 형식에서 점 제거)
+        const transferDateDisplay = document.getElementById('transferDate').value;
+        const acquisitionDateDisplay = document.getElementById('acquisitionDate').value;
 
-        console.log('Dates:', transferDateStr, acquisitionDateStr);
+        // 점을 제거하여 YYYYMMDD 형식으로 변환
+        const transferDateStr = dateToPlainString(transferDateDisplay);
+        const acquisitionDateStr = dateToPlainString(acquisitionDateDisplay);
+
+        console.log('Dates:', transferDateDisplay, acquisitionDateDisplay);
+        console.log('Plain dates:', transferDateStr, acquisitionDateStr);
 
         // 날짜 유효성 검사
+        if (!transferDateStr || !acquisitionDateStr) {
+            alert('양도일자와 취득일자를 입력해주세요');
+            return;
+        }
+
         if (transferDateStr.length !== 8 || acquisitionDateStr.length !== 8) {
-            alert('양도일자와 취득일자를 8자리 숫자로 입력해주세요 (예: 20240101)');
+            alert('양도일자와 취득일자를 올바른 형식으로 입력해주세요 (예: 2024.01.01)');
             return;
         }
 

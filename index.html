@@ -88,9 +88,12 @@
                     <h2>양도 정보</h2>
 
                     <div class="form-group">
-                        <label for="transferDate">양도일자 (8자리 숫자 입력)</label>
-                        <input type="text" id="transferDate" placeholder="예: 20240101" maxlength="8" required>
-                        <div class="date-display" id="transferDateDisplay"></div>
+                        <label for="transferDate">양도일자</label>
+                        <div class="date-input-wrapper">
+                            <input type="text" id="transferDate" placeholder="예: 20240101" maxlength="10" required>
+                            <input type="date" id="transferDatePicker" style="display: none;">
+                            <button type="button" class="calendar-btn" data-target="transferDate">📅</button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -111,9 +114,12 @@
                     <h2>취득 정보</h2>
 
                     <div class="form-group">
-                        <label for="acquisitionDate">취득일자 (8자리 숫자 입력)</label>
-                        <input type="text" id="acquisitionDate" placeholder="예: 20230101" maxlength="8" required>
-                        <div class="date-display" id="acquisitionDateDisplay"></div>
+                        <label for="acquisitionDate">취득일자</label>
+                        <div class="date-input-wrapper">
+                            <input type="text" id="acquisitionDate" placeholder="예: 20230101" maxlength="10" required>
+                            <input type="date" id="acquisitionDatePicker" style="display: none;">
+                            <button type="button" class="calendar-btn" data-target="acquisitionDate">📅</button>
+                        </div>
                     </div>
 
                     <div class="form-group">

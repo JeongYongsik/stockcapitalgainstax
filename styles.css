@@ -110,6 +110,44 @@ h2 {
     border-color: #667eea;
 }
 
+/* 날짜 입력 wrapper */
+.date-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.date-input-wrapper input[type="text"] {
+    flex: 1;
+}
+
+/* 달력 버튼 */
+.calendar-btn {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    background: #667eea;
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendar-btn:hover {
+    background: #5568d3;
+    border-color: #5568d3;
+    transform: scale(1.05);
+}
+
+.calendar-btn:active {
+    transform: scale(0.95);
+}
+
 /* 한글 표시 */
 .korean-display {
     margin-top: 5px;
