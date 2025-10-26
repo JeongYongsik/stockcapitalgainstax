@@ -2,7 +2,8 @@
 let selectedOptions = {
     majorShareholder: 'major',
     companyType: 'sme',
-    listingStatus: 'listed'
+    listingStatus: 'listed',
+    otcTrading: 'yes'
 };
 
 // ========== 유틸리티 함수 ==========
@@ -25,7 +26,7 @@ function addCommas(value) {
     return parseInt(numStr, 10).toLocaleString('ko-KR');
 }
 
-// 숫자를 한글로 변환 - 간소화 버전
+// 숫자를 한글로 변환
 function numberToKorean(num, unit) {
     if (!num || num === 0) return '';
 
@@ -48,22 +49,34 @@ function numberToKorean(num, unit) {
     return result.trim() + (unit ? ' (' + unit + ')' : '');
 }
 
-// 날짜를 YYYY.MM.DD 형식으로 변환
-function formatDate(dateStr) {
-    if (!dateStr) return '';
-    if (dateStr.includes('-')) {
-        return dateStr.replace(/-/g, '.');
+// 8자리 숫자를 YYYY.MM.DD 형식으로 변환
+function formatDateString(dateStr) {
+    if (dateStr.length !== 8) return '';
+
+    const year = dateStr.substring(0, 4);
+    const month = dateStr.substring(4, 6);
+    const day = dateStr.substring(6, 8);
+
+    // 유효성 검사
+    const monthNum = parseInt(month);
+    const dayNum = parseInt(day);
+
+    if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) {
+        return '';
     }
-    return dateStr;
+
+    return `${year}.${month}.${day}`;
 }
 
 // 날짜 문자열을 Date 객체로 변환
 function parseDateString(dateStr) {
-    if (!dateStr) return null;
-    if (dateStr.includes('-')) {
-        return new Date(dateStr);
-    }
-    return null;
+    if (!dateStr || dateStr.length !== 8) return null;
+
+    const year = parseInt(dateStr.substring(0, 4));
+    const month = parseInt(dateStr.substring(4, 6)) - 1;
+    const day = parseInt(dateStr.substring(6, 8));
+
+    return new Date(year, month, day);
 }
 
 // 보유 기간 계산 (일 단위)
@@ -77,50 +90,68 @@ function calculateHoldingPeriod(acquisitionDateStr, transferDateStr) {
     return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
-// ========== 세율 계산 ==========
+// ========== 세율 계산 (수정됨) ==========
 
-function calculateTaxRate(isMajorShareholder, isSME, isListed, taxBase, holdingDays) {
+function calculateTaxRate(isMajorShareholder, isSME, isListed, isOTC, taxBase, holdingDays) {
     if (taxBase <= 0) {
-        return { rate: 0, description: '과세표준 0 이하', progressive: 0 };
+        return { rate: 0, description: '과세표준 0 이하', progressive: 0, taxable: false };
+    }
+
+    // 대주주 외 + 상장 + 거래소거래 = 비과세
+    if (!isMajorShareholder && isListed && !isOTC) {
+        return { rate: 0, description: '비과세 (대주주 외 상장주식 거래소거래)', progressive: 0, taxable: false };
     }
 
     const taxBaseInHundredMillion = taxBase / 100000000;
 
-    // 1. 대주주 - 중소기업
-    if (isMajorShareholder && isSME) {
+    // 대주주인 경우
+    if (isMajorShareholder) {
+        // 중소기업 외 + 1년 미만 보유
+        if (!isSME && holdingDays < 365) {
+            return { rate: 0.30, description: '대주주-중소기업 외, 1년 미만 보유', progressive: 0, taxable: true };
+        }
+
+        // 나머지 모든 대주주 경우
         if (taxBaseInHundredMillion <= 3) {
-            return { rate: 0.20, description: '대주주-중소기업, 과표 3억 이하', progressive: 0 };
+            return { rate: 0.20, description: '대주주, 과표 3억 이하', progressive: 0, taxable: true };
         } else {
-            return { rate: 0.25, description: '대주주-중소기업, 과표 3억 초과', progressive: 15000000 };
+            return { rate: 0.25, description: '대주주, 과표 3억 초과', progressive: 15000000, taxable: true };
         }
     }
 
-    // 2. 대주주 - 중소기업 외
-    if (isMajorShareholder && !isSME) {
-        if (holdingDays < 365) {
-            return { rate: 0.30, description: '대주주-중소기업 외, 1년 미만 보유', progressive: 0 };
+    // 대주주 외인 경우
+    if (!isMajorShareholder) {
+        // 중소기업
+        if (isSME) {
+            return { rate: 0.10, description: '대주주 외-중소기업', progressive: 0, taxable: true };
         }
-        if (taxBaseInHundredMillion <= 3) {
-            return { rate: 0.20, description: '대주주-중소기업 외, 과표 3억 이하', progressive: 0 };
-        } else {
-            return { rate: 0.25, description: '대주주-중소기업 외, 과표 3억 초과', progressive: 15000000 };
+        // 중소기업 외
+        else {
+            return { rate: 0.20, description: '대주주 외-중소기업 외', progressive: 0, taxable: true };
         }
     }
 
-    // 3. 대주주 외 - 중소기업
-    if (!isMajorShareholder && isSME) {
-        return { rate: 0.10, description: '대주주 외-중소기업', progressive: 0 };
-    }
-
-    // 4. 대주주 외 - 중소기업 외
-    if (!isMajorShareholder && !isSME) {
-        return { rate: 0.20, description: '대주주 외-중소기업 외', progressive: 0 };
-    }
-
-    return { rate: 0, description: '알 수 없음', progressive: 0 };
+    return { rate: 0, description: '알 수 없음', progressive: 0, taxable: false };
 }
 
 // ========== 이벤트 핸들러 ==========
+
+// 장외거래 여부 표시/숨김
+function toggleOTCTrading() {
+    const isMajorShareholder = selectedOptions.majorShareholder === 'major';
+    const isListed = selectedOptions.listingStatus === 'listed';
+
+    const otcGroup = document.getElementById('otcTradingGroup');
+
+    // 대주주 외 + 상장일 때만 표시
+    if (!isMajorShareholder && isListed) {
+        otcGroup.style.display = 'block';
+    } else {
+        otcGroup.style.display = 'none';
+    }
+
+    console.log('OTC Trading visibility:', !isMajorShareholder && isListed);
+}
 
 // 버튼 그룹 클릭 이벤트
 function setupButtonGroups() {
@@ -144,7 +175,47 @@ function setupButtonGroups() {
             // 전역 변수에 저장
             selectedOptions[group] = value;
 
+            // 장외거래 여부 표시/숨김
+            toggleOTCTrading();
+
             console.log('Selected options:', selectedOptions);
+        });
+    });
+}
+
+// 날짜 입력 이벤트
+function setupDateInputs() {
+    const dateInputs = ['transferDate', 'acquisitionDate'];
+
+    dateInputs.forEach(id => {
+        const input = document.getElementById(id);
+        const display = document.getElementById(id + 'Display');
+
+        if (!input || !display) {
+            console.error('Date element not found:', id);
+            return;
+        }
+
+        input.addEventListener('input', function() {
+            // 숫자만 입력되도록
+            const value = this.value.replace(/[^\d]/g, '');
+            this.value = value;
+
+            // 8자리가 되면 날짜 형식으로 표시
+            if (value.length === 8) {
+                const formatted = formatDateString(value);
+                if (formatted) {
+                    display.textContent = formatted;
+                    display.style.color = '#667eea';
+                } else {
+                    display.textContent = '올바른 날짜를 입력해주세요';
+                    display.style.color = '#d32f2f';
+                }
+            } else {
+                display.textContent = '';
+            }
+
+            console.log('Date input:', id, value, 'Formatted:', display.textContent);
         });
     });
 }
@@ -199,8 +270,13 @@ function calculateTax() {
         console.log('Dates:', transferDateStr, acquisitionDateStr);
 
         // 날짜 유효성 검사
-        if (!transferDateStr || !acquisitionDateStr) {
-            alert('양도일자와 취득일자를 입력해주세요');
+        if (transferDateStr.length !== 8 || acquisitionDateStr.length !== 8) {
+            alert('양도일자와 취득일자를 8자리 숫자로 입력해주세요 (예: 20240101)');
+            return;
+        }
+
+        if (!formatDateString(transferDateStr) || !formatDateString(acquisitionDateStr)) {
+            alert('올바른 날짜를 입력해주세요');
             return;
         }
 
@@ -208,8 +284,9 @@ function calculateTax() {
         const isMajorShareholder = selectedOptions.majorShareholder === 'major';
         const isSME = selectedOptions.companyType === 'sme';
         const isListed = selectedOptions.listingStatus === 'listed';
+        const isOTC = selectedOptions.otcTrading === 'yes';
 
-        console.log('Options:', isMajorShareholder, isSME, isListed);
+        console.log('Options:', { isMajorShareholder, isSME, isListed, isOTC });
 
         // 숫자 값 가져오기
         const transferShares = parseFormattedNumber(document.getElementById('transferShares').value);
@@ -239,11 +316,13 @@ function calculateTax() {
         console.log('Calculated values:', { transferAmount, acquisitionAmount, capitalGain, taxBase, holdingDays });
 
         // 세율 계산
-        const taxInfo = calculateTaxRate(isMajorShareholder, isSME, isListed, taxBase, holdingDays);
+        const taxInfo = calculateTaxRate(isMajorShareholder, isSME, isListed, isOTC, taxBase, holdingDays);
 
         // 양도소득세
         let capitalGainTax;
-        if (taxInfo.progressive > 0) {
+        if (!taxInfo.taxable) {
+            capitalGainTax = 0;
+        } else if (taxInfo.progressive > 0) {
             capitalGainTax = Math.max(0, taxBase * taxInfo.rate - taxInfo.progressive);
         } else {
             capitalGainTax = taxBase * taxInfo.rate;
@@ -259,11 +338,11 @@ function calculateTax() {
 
         // 결과 표시
         displayResults({
-            transferDate: formatDate(transferDateStr),
+            transferDate: formatDateString(transferDateStr),
             transferAmount,
             transferShares,
             transferPricePerShare,
-            acquisitionDate: formatDate(acquisitionDateStr),
+            acquisitionDate: formatDateString(acquisitionDateStr),
             acquisitionAmount,
             acquisitionShares,
             acquisitionPricePerShare,
@@ -322,7 +401,9 @@ function displayResults(data) {
 
     // 양도소득세
     document.getElementById('resultCapitalGainTax').textContent = formatNumber(data.capitalGainTax) + ' 원';
-    if (data.taxInfo.progressive > 0) {
+    if (!data.taxInfo.taxable) {
+        document.getElementById('resultCapitalGainTaxNote').textContent = '비과세';
+    } else if (data.taxInfo.progressive > 0) {
         document.getElementById('resultCapitalGainTaxNote').textContent =
             `과세표준 × ${ratePercent} - 누진공제 ${formatNumber(data.taxInfo.progressive)}원`;
     } else {
@@ -364,9 +445,16 @@ function init() {
     setupButtonGroups();
     console.log('Button groups setup complete');
 
+    // 날짜 입력 설정
+    setupDateInputs();
+    console.log('Date inputs setup complete');
+
     // 숫자 입력 설정
     setupNumberInputs();
     console.log('Number inputs setup complete');
+
+    // 장외거래 여부 초기 상태 설정
+    toggleOTCTrading();
 
     // 계산하기 버튼
     const calculateBtn = document.getElementById('calculateBtn');

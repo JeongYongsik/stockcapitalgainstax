@@ -317,3 +317,145 @@ h2 {
         padding: 15px;
     }
 }
+
+/* 날짜 표시 */
+.date-display {
+    margin-top: 5px;
+    font-size: 13px;
+    color: #667eea;
+    font-weight: 600;
+    min-height: 18px;
+}
+
+/* 정보 테이블 (대주주 기준) */
+.info-table-container {
+    margin-top: 25px;
+    padding: 20px;
+    background: #fff3e0;
+    border-radius: 8px;
+    border-left: 4px solid #ff9800;
+}
+
+.info-table-container h3 {
+    color: #e65100;
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.info-table th,
+.info-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.info-table th {
+    background: #ff9800;
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.info-table td {
+    font-size: 13px;
+    color: #333;
+}
+
+.info-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.info-note {
+    font-size: 12px;
+    color: #e65100;
+    margin: 0;
+    font-weight: 600;
+}
+
+/* 세율표 */
+.tax-rate-table-container {
+    margin-top: 30px;
+    padding: 25px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    border: 2px solid #2196f3;
+}
+
+.tax-rate-table-container h2 {
+    color: #1565c0;
+    border-bottom-color: #2196f3;
+    margin-bottom: 20px;
+}
+
+.tax-rate-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+}
+
+.tax-rate-table thead {
+    background: #2196f3;
+    color: white;
+}
+
+.tax-rate-table th {
+    padding: 15px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.tax-rate-table td {
+    padding: 15px;
+    text-align: center;
+    font-size: 13px;
+    color: #333;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.tax-rate-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.tax-note {
+    font-size: 13px;
+    color: #1565c0;
+    margin: 0;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* 모바일 반응형 - 정보 테이블 */
+@media (max-width: 768px) {
+    .info-table-container,
+    .tax-rate-table-container {
+        padding: 15px;
+        overflow-x: auto;
+    }
+
+    .info-table,
+    .tax-rate-table {
+        font-size: 11px;
+        min-width: 500px;
+    }
+
+    .info-table th,
+    .info-table td,
+    .tax-rate-table th,
+    .tax-rate-table td {
+        padding: 8px;
+    }
+}
