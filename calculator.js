@@ -7,17 +7,18 @@ function formatNumber(num) {
 
 // 쉼표 제거하고 숫자만 추출
 function parseFormattedNumber(str) {
+    if (!str) return 0;
     return parseFloat(str.replace(/,/g, '')) || 0;
 }
 
 // 숫자에 쉼표 추가
-function addCommas(str) {
+function addCommas(value) {
     // 숫자만 남기기
-    const numStr = str.replace(/[^\d]/g, '');
+    const numStr = value.toString().replace(/[^\d]/g, '');
     if (!numStr) return '';
 
     // 쉼표 추가
-    return parseInt(numStr).toLocaleString('ko-KR');
+    return parseInt(numStr, 10).toLocaleString('ko-KR');
 }
 
 // 숫자를 한글로 변환
@@ -25,8 +26,6 @@ function numberToKorean(num, unit) {
     if (!num || num === 0) return '';
 
     const units = ['', '만', '억', '조'];
-    const smallUnits = ['천', '백', '십', ''];
-
     let result = [];
     let unitIndex = 0;
 
@@ -35,47 +34,35 @@ function numberToKorean(num, unit) {
 
         if (segment > 0) {
             let segmentStr = '';
-            let temp = segment;
-            let smallUnitIndex = 0;
 
-            // 천, 백, 십, 일 단위 처리
-            if (temp >= 1000) {
-                const thousand = Math.floor(temp / 1000);
-                if (thousand === 1) {
-                    segmentStr = '1천';
-                } else {
-                    segmentStr = thousand + '천';
-                }
-                temp %= 1000;
+            // 천 단위
+            if (segment >= 1000) {
+                const thousand = Math.floor(segment / 1000);
+                segmentStr = thousand + '천';
             }
 
-            if (temp >= 100) {
-                const hundred = Math.floor(temp / 100);
+            // 백 단위
+            const hundred = Math.floor((segment % 1000) / 100);
+            if (hundred > 0) {
                 if (segmentStr) segmentStr += ' ';
-                if (hundred === 1) {
-                    segmentStr += '1백';
-                } else {
-                    segmentStr += hundred + '백';
-                }
-                temp %= 100;
+                segmentStr += hundred + '백';
             }
 
-            if (temp >= 10) {
-                const ten = Math.floor(temp / 10);
+            // 십 단위
+            const ten = Math.floor((segment % 100) / 10);
+            if (ten > 0) {
                 if (segmentStr) segmentStr += ' ';
-                if (ten === 1) {
-                    segmentStr += '1십';
-                } else {
-                    segmentStr += ten + '십';
-                }
-                temp %= 10;
+                segmentStr += ten + '십';
             }
 
-            if (temp > 0) {
+            // 일 단위
+            const one = segment % 10;
+            if (one > 0) {
                 if (segmentStr) segmentStr += ' ';
-                segmentStr += temp;
+                segmentStr += one;
             }
 
+            // 만, 억, 조 단위 추가
             if (units[unitIndex]) {
                 segmentStr += units[unitIndex];
             }
@@ -87,37 +74,31 @@ function numberToKorean(num, unit) {
         unitIndex++;
     }
 
-    return result.join(' ') + (unit ? `(${unit})` : '');
+    return result.join(' ') + (unit ? ' (' + unit + ')' : '');
 }
 
-// 날짜 포맷팅 (YYYYMMDD -> YYYY.MM.DD)
+// 날짜를 YYYY.MM.DD 형식으로 변환
 function formatDate(dateStr) {
-    if (dateStr.length !== 8) return '';
+    if (!dateStr) return '';
 
-    const year = dateStr.substring(0, 4);
-    const month = dateStr.substring(4, 6);
-    const day = dateStr.substring(6, 8);
-
-    // 유효성 검사
-    const monthNum = parseInt(month);
-    const dayNum = parseInt(day);
-
-    if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) {
-        return '';
+    // YYYY-MM-DD 형식이면 YYYY.MM.DD로 변환
+    if (dateStr.includes('-')) {
+        return dateStr.replace(/-/g, '.');
     }
 
-    return `${year}.${month}.${day}`;
+    return dateStr;
 }
 
 // 날짜 문자열을 Date 객체로 변환
 function parseDateString(dateStr) {
-    if (dateStr.length !== 8) return null;
+    if (!dateStr) return null;
 
-    const year = parseInt(dateStr.substring(0, 4));
-    const month = parseInt(dateStr.substring(4, 6)) - 1;
-    const day = parseInt(dateStr.substring(6, 8));
+    // YYYY-MM-DD 형식
+    if (dateStr.includes('-')) {
+        return new Date(dateStr);
+    }
 
-    return new Date(year, month, day);
+    return null;
 }
 
 // 보유 기간 계산 (일 단위)
@@ -182,7 +163,6 @@ function handleOptionButtonClick(e) {
     if (!button.classList.contains('option-btn')) return;
 
     const group = button.dataset.group;
-    const value = button.dataset.value;
 
     // 같은 그룹의 모든 버튼에서 active 제거
     document.querySelectorAll(`[data-group="${group}"]`).forEach(btn => {
@@ -193,35 +173,13 @@ function handleOptionButtonClick(e) {
     button.classList.add('active');
 }
 
-// 날짜 입력 이벤트
-function handleDateInput(e) {
-    const input = e.target;
-    const displayId = input.id + 'Display';
-    const displayElement = document.getElementById(displayId);
-
-    // 숫자만 입력되도록
-    const value = input.value.replace(/[^\d]/g, '');
-    input.value = value;
-
-    // 8자리가 되면 날짜 형식으로 표시
-    if (value.length === 8) {
-        const formatted = formatDate(value);
-        if (formatted) {
-            displayElement.textContent = formatted;
-        } else {
-            displayElement.textContent = '올바른 날짜를 입력해주세요';
-            displayElement.style.color = '#d32f2f';
-        }
-    } else {
-        displayElement.textContent = '';
-    }
-}
-
 // 숫자 입력 이벤트
 function handleNumberInput(e) {
     const input = e.target;
     const koreanId = input.id + 'Korean';
     const koreanElement = document.getElementById(koreanId);
+
+    if (!koreanElement) return;
 
     // 숫자만 추출
     const value = input.value.replace(/[^\d]/g, '');
@@ -231,7 +189,7 @@ function handleNumberInput(e) {
         input.value = addCommas(value);
 
         // 한글 표시
-        const num = parseInt(value);
+        const num = parseInt(value, 10);
         let unit = '';
         if (input.id.includes('Shares')) {
             unit = '주';
@@ -247,86 +205,95 @@ function handleNumberInput(e) {
 
 // 계산하기
 function calculateTax() {
-    // 입력값 가져오기
-    const transferDateStr = document.getElementById('transferDate').value;
-    const acquisitionDateStr = document.getElementById('acquisitionDate').value;
+    try {
+        // 입력값 가져오기
+        const transferDateStr = document.getElementById('transferDate').value;
+        const acquisitionDateStr = document.getElementById('acquisitionDate').value;
 
-    // 날짜 유효성 검사
-    if (transferDateStr.length !== 8 || acquisitionDateStr.length !== 8) {
-        alert('양도일자와 취득일자를 8자리 숫자로 입력해주세요 (예: 20240101)');
-        return;
+        // 날짜 유효성 검사
+        if (!transferDateStr || !acquisitionDateStr) {
+            alert('양도일자와 취득일자를 입력해주세요');
+            return;
+        }
+
+        // 선택 값 가져오기
+        const majorShareholderBtn = document.querySelector('[data-group="majorShareholder"].active');
+        const companyTypeBtn = document.querySelector('[data-group="companyType"].active');
+        const listingStatusBtn = document.querySelector('[data-group="listingStatus"].active');
+
+        if (!majorShareholderBtn || !companyTypeBtn || !listingStatusBtn) {
+            alert('기본 정보를 모두 선택해주세요');
+            return;
+        }
+
+        const isMajorShareholder = majorShareholderBtn.dataset.value === 'major';
+        const isSME = companyTypeBtn.dataset.value === 'sme';
+        const isListed = listingStatusBtn.dataset.value === 'listed';
+
+        // 숫자 값 가져오기
+        const transferShares = parseFormattedNumber(document.getElementById('transferShares').value);
+        const transferPricePerShare = parseFormattedNumber(document.getElementById('transferPricePerShare').value);
+        const acquisitionShares = parseFormattedNumber(document.getElementById('acquisitionShares').value);
+        const acquisitionPricePerShare = parseFormattedNumber(document.getElementById('acquisitionPricePerShare').value);
+
+        if (!transferShares || !transferPricePerShare || !acquisitionShares || !acquisitionPricePerShare) {
+            alert('모든 숫자 입력 항목을 입력해주세요');
+            return;
+        }
+
+        // 계산
+        const transferAmount = transferShares * transferPricePerShare;
+        const acquisitionAmount = acquisitionShares * acquisitionPricePerShare;
+        const transactionTax = transferAmount * 0.0035; // 증권거래세 0.35%
+        const totalExpenses = transactionTax;
+        const capitalGain = transferAmount - acquisitionAmount - totalExpenses;
+        const basicDeduction = document.getElementById('basicDeduction').checked ? 2500000 : 0;
+        const taxBase = Math.max(0, capitalGain - basicDeduction);
+
+        // 보유 기간
+        const holdingDays = calculateHoldingPeriod(acquisitionDateStr, transferDateStr);
+
+        // 세율 계산
+        const taxInfo = calculateTaxRate(isMajorShareholder, isSME, isListed, taxBase, holdingDays);
+
+        // 양도소득세
+        let capitalGainTax;
+        if (taxInfo.progressive > 0) {
+            capitalGainTax = Math.max(0, taxBase * taxInfo.rate - taxInfo.progressive);
+        } else {
+            capitalGainTax = taxBase * taxInfo.rate;
+        }
+
+        // 지방소득세
+        const localTax = capitalGainTax * 0.1;
+
+        // 합계
+        const totalTax = capitalGainTax + localTax;
+
+        // 결과 표시
+        displayResults({
+            transferDate: formatDate(transferDateStr),
+            transferAmount,
+            transferShares,
+            transferPricePerShare,
+            acquisitionDate: formatDate(acquisitionDateStr),
+            acquisitionAmount,
+            acquisitionShares,
+            acquisitionPricePerShare,
+            totalExpenses,
+            transactionTax,
+            capitalGain,
+            basicDeduction,
+            taxBase,
+            taxInfo,
+            capitalGainTax,
+            localTax,
+            totalTax
+        });
+    } catch (error) {
+        console.error('계산 중 오류 발생:', error);
+        alert('계산 중 오류가 발생했습니다. 입력값을 확인해주세요.');
     }
-
-    if (!formatDate(transferDateStr) || !formatDate(acquisitionDateStr)) {
-        alert('올바른 날짜를 입력해주세요');
-        return;
-    }
-
-    // 선택 값 가져오기
-    const isMajorShareholder = document.querySelector('[data-group="majorShareholder"].active').dataset.value === 'major';
-    const isSME = document.querySelector('[data-group="companyType"].active').dataset.value === 'sme';
-    const isListed = document.querySelector('[data-group="listingStatus"].active').dataset.value === 'listed';
-
-    // 숫자 값 가져오기
-    const transferShares = parseFormattedNumber(document.getElementById('transferShares').value);
-    const transferPricePerShare = parseFormattedNumber(document.getElementById('transferPricePerShare').value);
-    const acquisitionShares = parseFormattedNumber(document.getElementById('acquisitionShares').value);
-    const acquisitionPricePerShare = parseFormattedNumber(document.getElementById('acquisitionPricePerShare').value);
-
-    if (!transferShares || !transferPricePerShare || !acquisitionShares || !acquisitionPricePerShare) {
-        alert('모든 숫자 입력 항목을 입력해주세요');
-        return;
-    }
-
-    // 계산
-    const transferAmount = transferShares * transferPricePerShare;
-    const acquisitionAmount = acquisitionShares * acquisitionPricePerShare;
-    const transactionTax = transferAmount * 0.0035; // 증권거래세 0.35%
-    const totalExpenses = transactionTax;
-    const capitalGain = transferAmount - acquisitionAmount - totalExpenses;
-    const basicDeduction = document.getElementById('basicDeduction').checked ? 2500000 : 0;
-    const taxBase = Math.max(0, capitalGain - basicDeduction);
-
-    // 보유 기간
-    const holdingDays = calculateHoldingPeriod(acquisitionDateStr, transferDateStr);
-
-    // 세율 계산
-    const taxInfo = calculateTaxRate(isMajorShareholder, isSME, isListed, taxBase, holdingDays);
-
-    // 양도소득세
-    let capitalGainTax;
-    if (taxInfo.progressive > 0) {
-        capitalGainTax = Math.max(0, taxBase * taxInfo.rate - taxInfo.progressive);
-    } else {
-        capitalGainTax = taxBase * taxInfo.rate;
-    }
-
-    // 지방소득세
-    const localTax = capitalGainTax * 0.1;
-
-    // 합계
-    const totalTax = capitalGainTax + localTax;
-
-    // 결과 표시
-    displayResults({
-        transferDate: formatDate(transferDateStr),
-        transferAmount,
-        transferShares,
-        transferPricePerShare,
-        acquisitionDate: formatDate(acquisitionDateStr),
-        acquisitionAmount,
-        acquisitionShares,
-        acquisitionPricePerShare,
-        totalExpenses,
-        transactionTax,
-        capitalGain,
-        basicDeduction,
-        taxBase,
-        taxInfo,
-        capitalGainTax,
-        localTax,
-        totalTax
-    });
 }
 
 // 결과 표시
@@ -381,32 +348,42 @@ function displayResults(data) {
     document.getElementById('resultTotalTax').textContent = formatNumber(data.totalTax) + ' 원';
 
     // 결과 블록 표시
-    document.getElementById('resultBlock').style.display = 'block';
+    const resultBlock = document.getElementById('resultBlock');
+    resultBlock.style.display = 'block';
 
     // 결과로 스크롤
-    document.getElementById('resultBlock').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => {
+        resultBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
 }
 
 // ========== 초기화 ==========
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Calculator initialized');
+
     // 버튼 그룹 이벤트 리스너
     document.querySelectorAll('.button-group').forEach(group => {
         group.addEventListener('click', handleOptionButtonClick);
     });
 
-    // 날짜 입력 이벤트 리스너
-    document.getElementById('transferDate').addEventListener('input', handleDateInput);
-    document.getElementById('acquisitionDate').addEventListener('input', handleDateInput);
-
     // 숫자 입력 이벤트 리스너
-    document.getElementById('transferShares').addEventListener('input', handleNumberInput);
-    document.getElementById('transferPricePerShare').addEventListener('input', handleNumberInput);
-    document.getElementById('acquisitionShares').addEventListener('input', handleNumberInput);
-    document.getElementById('acquisitionPricePerShare').addEventListener('input', handleNumberInput);
+    const numberInputs = ['transferShares', 'transferPricePerShare', 'acquisitionShares', 'acquisitionPricePerShare'];
+    numberInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', handleNumberInput);
+        }
+    });
 
     // 계산하기 버튼
-    document.getElementById('calculateBtn').addEventListener('click', calculateTax);
+    const calculateBtn = document.getElementById('calculateBtn');
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            calculateTax();
+        });
+    }
 
     // Enter 키로 계산
     document.querySelectorAll('input').forEach(input => {
@@ -417,4 +394,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    console.log('All event listeners attached');
 });

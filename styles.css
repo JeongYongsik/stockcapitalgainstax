@@ -94,7 +94,8 @@ h2 {
 }
 
 /* 텍스트 입력 필드 */
-.form-group input[type="text"] {
+.form-group input[type="text"],
+.form-group input[type="date"] {
     width: 100%;
     padding: 12px;
     border: 2px solid #ddd;
@@ -103,18 +104,10 @@ h2 {
     transition: border-color 0.3s;
 }
 
-.form-group input[type="text"]:focus {
+.form-group input[type="text"]:focus,
+.form-group input[type="date"]:focus {
     outline: none;
     border-color: #667eea;
-}
-
-/* 날짜 표시 */
-.date-display {
-    margin-top: 5px;
-    font-size: 13px;
-    color: #667eea;
-    font-weight: 600;
-    min-height: 18px;
 }
 
 /* 한글 표시 */
