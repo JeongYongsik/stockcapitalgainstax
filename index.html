@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주식 양도소득세 계산기</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>주식 양도소득세 계산기</h1>
+
+        <form id="taxCalculator">
+            <!-- 선택 사항 -->
+            <section class="form-section">
+                <h2>기본 정보</h2>
+
+                <div class="form-group">
+                    <label>대주주 여부</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="majorShareholder" value="major" checked>
+                            대주주
+                        </label>
+                        <label>
+                            <input type="radio" name="majorShareholder" value="non-major">
+                            대주주 외
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>기업 구분</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="companyType" value="sme" checked>
+                            중소기업
+                        </label>
+                        <label>
+                            <input type="radio" name="companyType" value="non-sme">
+                            중소기업 외
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>상장 여부</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="listingStatus" value="listed" checked>
+                            상장
+                        </label>
+                        <label>
+                            <input type="radio" name="listingStatus" value="unlisted">
+                            비상장
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 양도 정보 -->
+            <section class="form-section">
+                <h2>양도 정보</h2>
+
+                <div class="form-group">
+                    <label for="transferDate">양도일자</label>
+                    <input type="date" id="transferDate" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="transferShares">양도주식 수</label>
+                        <input type="number" id="transferShares" min="0" step="1" placeholder="주" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transferPricePerShare">주당 양도가액</label>
+                        <input type="number" id="transferPricePerShare" min="0" step="0.01" placeholder="원" required>
+                    </div>
+                </div>
+
+                <div class="form-group calculated">
+                    <label>양도가액</label>
+                    <div class="calculated-value" id="transferAmount">0 원</div>
+                </div>
+            </section>
+
+            <!-- 취득 정보 -->
+            <section class="form-section">
+                <h2>취득 정보</h2>
+
+                <div class="form-group">
+                    <label for="acquisitionDate">취득일자</label>
+                    <input type="date" id="acquisitionDate" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="acquisitionShares">취득주식 수</label>
+                        <input type="number" id="acquisitionShares" min="0" step="1" placeholder="주" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="acquisitionPricePerShare">주당 취득가액</label>
+                        <input type="number" id="acquisitionPricePerShare" min="0" step="0.01" placeholder="원" required>
+                    </div>
+                </div>
+
+                <div class="form-group calculated">
+                    <label>취득가액</label>
+                    <div class="calculated-value" id="acquisitionAmount">0 원</div>
+                </div>
+            </section>
+
+            <!-- 필요경비 -->
+            <section class="form-section">
+                <h2>필요경비</h2>
+
+                <div class="form-group calculated">
+                    <label>증권거래세 (양도가액 × 0.35%)</label>
+                    <div class="calculated-value" id="transactionTax">0 원</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="otherExpenses">그 외 필요경비</label>
+                    <input type="number" id="otherExpenses" min="0" step="0.01" value="0" placeholder="원">
+                </div>
+
+                <div class="form-group calculated">
+                    <label>필요경비 합계</label>
+                    <div class="calculated-value" id="totalExpenses">0 원</div>
+                </div>
+            </section>
+
+            <!-- 공제 및 과세 -->
+            <section class="form-section">
+                <h2>공제 및 과세표준</h2>
+
+                <div class="form-group calculated">
+                    <label>양도차익</label>
+                    <div class="calculated-value" id="capitalGain">0 원</div>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="basicDeduction" checked>
+                        기본공제 250만원 적용
+                    </label>
+                </div>
+
+                <div class="form-group calculated">
+                    <label>과세표준</label>
+                    <div class="calculated-value" id="taxBase">0 원</div>
+                </div>
+            </section>
+
+            <!-- 계산 버튼 -->
+            <button type="button" id="calculateBtn" class="calculate-btn">계산하기</button>
+        </form>
+
+        <!-- 결과 영역 -->
+        <section class="result-section" id="resultSection" style="display: none;">
+            <h2>계산 결과</h2>
+
+            <div class="result-item">
+                <span class="result-label">적용 세율</span>
+                <span class="result-value" id="taxRate">-</span>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">양도소득세</span>
+                <span class="result-value highlight" id="capitalGainTax">0 원</span>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">지방소득세 (양도소득세의 10%)</span>
+                <span class="result-value" id="localTax">0 원</span>
+            </div>
+
+            <div class="result-item total">
+                <span class="result-label">합계 세액</span>
+                <span class="result-value" id="totalTax">0 원</span>
+            </div>
+        </section>
+    </div>
+
+    <script src="calculator.js"></script>
+</body>
+</html>
